@@ -2,9 +2,14 @@
 stamp the snapshot with a build timestamp (plan §5 — the freshness promise).
 
 M1 scope only: Riksdagen SFS law text. Migrationsverket guidance-page
-ingestion is gated behind the per-site villkor check (ADR-0004, plan §2.2)
-and is not wired in here yet — adding it before that check would put
-unverified guidance content straight into a publicly distributed snapshot.
+ingestion is not wired in here yet. The compliance gate for the main
+migrationsverket.se site (visa guides, processing-time pages) has since
+cleared — full-text redistribution under CC-BY is confirmed permitted, see
+docs/research/migrationsverket-villkor.md and ADR-0004's 2026-07-18 update —
+so what remains for that source is scraping/parsing implementation, not a
+compliance blocker. rättsliga ställningstaganden (Lifos subdomain) are still
+compliance-gated: no villkor found for that platform, so they stay under
+ADR-0004's conservative default until verified separately.
 """
 
 from __future__ import annotations

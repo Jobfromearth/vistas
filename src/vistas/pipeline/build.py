@@ -1,15 +1,14 @@
-"""Snapshot build: fetch legal sources, parse, ingest into the version chain,
-stamp the snapshot with a build timestamp (plan §5 — the freshness promise).
+"""Snapshot build: fetch legal and guidance sources, parse, ingest into the
+version chain, stamp the snapshot with a build timestamp (plan §5 — the
+freshness promise).
 
-M1 scope only: Riksdagen SFS law text. Migrationsverket guidance-page
-ingestion is not wired in here yet. The compliance gate for the main
-migrationsverket.se site (visa guides, processing-time pages) has since
-cleared — full-text redistribution under CC-BY is confirmed permitted, see
-docs/research/migrationsverket-villkor.md and ADR-0004's 2026-07-18 update —
-so what remains for that source is scraping/parsing implementation, not a
-compliance blocker. rättsliga ställningstaganden (Lifos subdomain) are still
-compliance-gated: no villkor found for that platform, so they stay under
-ADR-0004's conservative default until verified separately.
+Legal source: Riksdagen SFS law text. Guidance source: migrationsverket.se
+pages listed in vistas.sources.migrationsverket.GUIDANCE_PAGES — the only
+ones compliance-cleared for full-text redistribution (ADR-0004's 2026-07-18
+update, docs/research/migrationsverket-villkor.md). rättsliga
+ställningstaganden (Lifos subdomain) remain compliance-gated: no villkor
+found for that platform, so they must not be added to GUIDANCE_PAGES without
+a separate check.
 """
 
 from __future__ import annotations
@@ -20,11 +19,34 @@ from collections.abc import Callable
 from pathlib import Path
 
 from vistas.config import DB_PATH_ENV, default_db_path
-from vistas.sources.riksdagen import FetchResult, RiksdagenClient, parse_sfs_text
+from vistas.sources.common import FetchResult
+from vistas.sources.migrationsverket import (
+    GUIDANCE_PAGES,
+    MigrationsverketClient,
+    parse_guidance_page,
+)
+from vistas.sources.riksdagen import RiksdagenClient, parse_sfs_text
 from vistas.store import IngestReport, Store
 
 # P0 legal sources tracked from day one (plan §2.1).
 DEFAULT_LAWS: tuple[str, ...] = ("2005:716",)  # Utlänningslagen
+
+
+def _fetch_or_skip(
+    store: Store, etag_key: str, fetch: Callable[[str, str | None], FetchResult], key: str
+) -> tuple[str, str | None] | None:
+    """Conditionally fetch `key` via the snapshot's stored ETag. Returns None
+    if the source is unchanged (caller records a zero-change report and
+    moves on); otherwise (text, new_etag). The caller stores the new ETag
+    itself, only after successfully parsing and ingesting — storing it here
+    would let a parse failure poison future runs into 304-skipping a source
+    that never actually got ingested.
+    """
+    result = fetch(key, store.get_meta(etag_key))
+    if result.not_modified:
+        return None
+    assert result.text is not None
+    return result.text, result.etag
 
 
 def build_snapshot(
@@ -47,21 +69,60 @@ def build_snapshot(
     reports: dict[str, IngestReport] = {}
     for sfs_nr in laws:
         etag_key = f"etag:sfs-{sfs_nr}"
-        result = fetch(sfs_nr, store.get_meta(etag_key))
-        if result.not_modified:
+        fetched = _fetch_or_skip(store, etag_key, fetch, sfs_nr)
+        if fetched is None:
             reports[sfs_nr] = IngestReport(added=0, changed=0, removed=0)
             continue
+        text, etag = fetched
 
-        assert result.text is not None
-        law = parse_sfs_text(result.text)
+        law = parse_sfs_text(text)
         if not law.chunks:
             # Parser health signal (plan §5): a law with zero parsed §§ means
             # the source format changed under us, not that the law is empty.
             raise RuntimeError(f"parsed 0 chunks for SFS {sfs_nr} — check for a format change")
         scope = f"sfs-{law.sfs_nr}"
         reports[sfs_nr] = store.ingest(scope, law.chunks, observed=observed)
-        if result.etag:
-            store.set_meta(etag_key, result.etag)
+        if etag:
+            store.set_meta(etag_key, etag)
+
+    store.set_meta("built_at", dt.datetime.now(dt.UTC).isoformat())
+    return reports
+
+
+def build_guidance_snapshot(
+    store: Store,
+    *,
+    pages: dict[str, str] = GUIDANCE_PAGES,
+    fetch: Callable[[str, str | None], FetchResult] | None = None,
+    observed: dt.date | None = None,
+) -> dict[str, IngestReport]:
+    """Fetch each guidance page (conditionally, via its stored ETag), parse
+    it into section-anchored chunks, and ingest into the version chain.
+    `pages` maps URL -> area tag. `fetch` is injectable for offline testing;
+    the real pipeline passes MigrationsverketClient.fetch_page.
+    """
+    if fetch is None:
+        client = MigrationsverketClient()
+        fetch = lambda url, etag: client.fetch_page(url, etag=etag)  # noqa: E731
+    observed = observed or dt.datetime.now(dt.UTC).date()
+
+    reports: dict[str, IngestReport] = {}
+    for url, area in pages.items():
+        etag_key = f"etag:{url}"
+        fetched = _fetch_or_skip(store, etag_key, fetch, url)
+        if fetched is None:
+            reports[url] = IngestReport(added=0, changed=0, removed=0)
+            continue
+        text, etag = fetched
+
+        page = parse_guidance_page(text, url, area=area)
+        if not page.chunks:
+            # Parser health signal (plan §5): a page with zero parsed
+            # sections means the source layout changed under us.
+            raise RuntimeError(f"parsed 0 sections for {url} — check for a layout change")
+        reports[url] = store.ingest(url, page.chunks, observed=observed)
+        if etag:
+            store.set_meta(etag_key, etag)
 
     store.set_meta("built_at", dt.datetime.now(dt.UTC).isoformat())
     return reports
@@ -81,6 +142,11 @@ def main() -> None:
         dest="laws",
         help="SFS number to ingest, e.g. 2005:716 (repeatable)",
     )
+    parser.add_argument(
+        "--skip-guidance",
+        action="store_true",
+        help="Skip migrationsverket.se guidance pages, ingest legal sources only",
+    )
     args = parser.parse_args()
 
     db_path = args.db or default_db_path()
@@ -88,11 +154,15 @@ def main() -> None:
     store = Store.open(db_path)
     try:
         reports = build_snapshot(store, laws=tuple(args.laws) if args.laws else DEFAULT_LAWS)
+        for sfs_nr, report in reports.items():
+            print(f"{sfs_nr}: +{report.added} ~{report.changed} -{report.removed}")
+
+        if not args.skip_guidance:
+            guidance_reports = build_guidance_snapshot(store)
+            for url, report in guidance_reports.items():
+                print(f"{url}: +{report.added} ~{report.changed} -{report.removed}")
     finally:
         store.close()
-
-    for sfs_nr, report in reports.items():
-        print(f"{sfs_nr}: +{report.added} ~{report.changed} -{report.removed}")
 
 
 if __name__ == "__main__":

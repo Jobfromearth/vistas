@@ -22,10 +22,16 @@ def test_fetch_and_parse_utlanningslagen() -> None:
 
 
 @pytest.mark.live
-def test_conditional_refetch_returns_304() -> None:
+def test_no_etag_from_server_means_every_run_refetches() -> None:
+    """As of 2026-07-19, data.riksdagen.se sends no ETag/Last-Modified for
+    this endpoint (verified via a direct HEAD request) — despite an earlier
+    check in this project appearing to show 304 behavior, which on closer
+    look was actually store.ingest's content-diff reporting "no changes",
+    not an HTTP-level 304. Conditional caching degrades to "always
+    refetch," correct if bandwidth-wasteful; this test pins down the
+    current reality so a real regression (or the server adding ETag
+    support) gets noticed rather than assumed."""
     client = RiksdagenClient()
-    first = client.fetch_sfs_text("2005:716")
-    assert first.etag is not None
-    second = client.fetch_sfs_text("2005:716", etag=first.etag)
-    assert second.not_modified is True
-    assert second.text is None
+    result = client.fetch_sfs_text("2005:716")
+    assert result.not_modified is False
+    assert result.etag is None

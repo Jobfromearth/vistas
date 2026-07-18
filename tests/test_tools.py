@@ -76,9 +76,28 @@ class TestSearchRules:
         assert hit["anchor"] == "sfs-2005:716 kap.6 §2"
         assert hit["anchor_level"] == "paragraph"
         assert hit["source_url"] == "https://data.riksdagen.se/dokument/sfs-2005-716"
+        assert hit["attribution"] == "Sveriges riksdag"
         assert hit["observed_from"] == "2026-07-01"
         assert hit["valid_from"] == "2023-11-01"
         assert result["snapshot_built_at"] == "2026-07-18T00:00:00Z"
+
+    def test_migrationsverket_hit_carries_explicit_attribution(self, store: Store) -> None:
+        """Migrationsverket's own terms make attribution a hard condition for
+        redistribution (docs/research/migrationsverket-villkor.md) — an
+        explicit name must survive even if a caller drops the URL."""
+        url = "https://www.migrationsverket.se/en/you-want-to-apply/work.html"
+        chunk = ObservedChunk(
+            chunk_id="guid/mv/krav/sv",
+            content="Du behöver ett anställningsavtal.",
+            language="sv",
+            anchor=Anchor(SourceType.GUIDANCE, url, section="Krav"),
+            source_url=url,
+            area="work_permit",
+        )
+        store.ingest(url, [chunk], observed=D1)
+        result = search_rules(store, "anställningsavtal")
+        hit = next(h for h in result["results"] if h["chunk_id"] == "guid/mv/krav/sv")
+        assert hit["attribution"] == "Migrationsverket"
 
     def test_guidance_hit_has_section_level_anchor(self, store: Store) -> None:
         result = search_rules(store, "jobberbjudande")

@@ -16,6 +16,24 @@ from vistas.model import Anchor, ChangeRecord, RuleVersion
 from vistas.retrieval import search
 from vistas.store import Store
 
+# Explicit attribution string per source, keyed by domain. Migrationsverket's
+# own terms make this a hard redistribution condition, not just courtesy —
+# "förutsatt att du anger Migrationsverket som källa" (docs/research/
+# migrationsverket-villkor.md). source_url alone identifies the source, but
+# an explicit name survives even if a downstream consumer only renders
+# `content` and drops the URL.
+_ATTRIBUTION_BY_DOMAIN: dict[str, str] = {
+    "migrationsverket.se": "Migrationsverket",
+    "riksdagen.se": "Sveriges riksdag",
+}
+
+
+def _attribution(source_url: str) -> str | None:
+    for domain, name in _ATTRIBUTION_BY_DOMAIN.items():
+        if domain in source_url:
+            return name
+    return None
+
 
 def _version_dict(v: RuleVersion) -> dict[str, Any]:
     c = v.chunk
@@ -29,6 +47,7 @@ def _version_dict(v: RuleVersion) -> dict[str, Any]:
         # source_type names it explicitly; anchor shape implies it too.
         "source_type": c.anchor.source_type.value,
         "source_url": c.source_url,
+        "attribution": _attribution(c.source_url),
         "area": c.area,
         "version_id": v.version_id,
         "supersedes": v.supersedes,

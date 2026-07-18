@@ -15,9 +15,11 @@ regardless of its source container, the same "regularize before chunking"
 idea as the plan's markitdown choice, without pulling in markitdown's ML
 dependency stack (only beautifulsoup4 + markdownify are needed here).
 
-Seed scope: one real, substantive guidance page (work-permit requirements
-for employees), verified end-to-end. GUIDANCE_PAGES is a plain URL->area
-map — extending P0 coverage (plan §2.1) is adding entries, not new mechanism.
+Coverage: the plan §1 target visa-question set (study extension, job-seeking
+permit, study-to-work conversion, work permit, PUT, family permit) plus
+tourism/visiting-friends-and-family, one seed page per topic, each verified
+end-to-end. GUIDANCE_PAGES is a plain URL->area map — extending coverage
+further is adding entries, not new mechanism.
 """
 
 from __future__ import annotations
@@ -35,12 +37,34 @@ from vistas.sources.common import FetchResult, PoliteClient
 USER_AGENT = "vistas-mcp/0.1 (+https://github.com/Jobfromearth/vistas; haobo5869@gmail.com)"
 
 # URL -> area tag (plan §3.3 topic routing), same mechanism as riksdagen.AREA_MAPS.
+# "job_seeking" and "family" have no Riksdagen chapter counterpart yet
+# (AREA_MAPS in riksdagen.py doesn't tag those chapters) — until it does,
+# those two areas only ever surface guidance content, not law text.
+_BASE = "https://www.migrationsverket.se/en/you-want-to-apply"
 GUIDANCE_PAGES: dict[str, str] = {
-    "https://www.migrationsverket.se/en/you-want-to-apply/work/"
-    "employee-or-self-employed/employees.html": "work_permit",
+    # 工签 work permit
+    f"{_BASE}/work/employee-or-self-employed/employees.html": "work_permit",
+    # 学签 study permit (university-level studies)
+    f"{_BASE}/study/higher-education.html": "study",
+    # 求职签 job-seeking permit after graduation. Note: under
+    # you-want-to-extend, not you-want-to-apply — the apply-tree page for
+    # this topic is a thin stub pointing here; this is the real content.
+    "https://www.migrationsverket.se/en/you-want-to-extend/study/"
+    "look-for-work-after-completing-your-studies-in-sweden.html": "job_seeking",
+    # 学签转工签 study-to-work conversion
+    f"{_BASE}/work/employee-or-self-employed/students-who-have-found-work.html": "work_permit",
+    # PUT permanent residence
+    f"{_BASE}/permanent-residence-permit.html": "put",
+    # 家属签 family of a work-permit holder
+    f"{_BASE}/work/employee-or-self-employed/"
+    "family-of-an-employee-or-self-employed-person-who-apply-afterwards.html": "family",
+    # 旅游 tourism / short visits (Schengen entry visa)
+    f"{_BASE}/visiting-sweden/visiting-sweden-for-up-to-90-days-entry-visa.html": "visa",
+    # 探亲访友 visiting friends or family
+    f"{_BASE}/visiting-sweden/invite-family-friends-or-partners.html": "visa",
 }
 
-_HEADING_RE = re.compile(r"^(#{2,3})\s+(.*)$")
+_HEADING_RE = re.compile(r"^(#{1,3})\s+(.*)$")
 _LINK_WRAP_RE = re.compile(r"^\[(.+)]\([^)]*\)$")
 _LINK_RE = re.compile(r"\[([^\]]*)]\([^)]*\)")
 _BOLD_RE = re.compile(r"\*\*([^*]+)\*\*")

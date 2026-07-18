@@ -63,6 +63,16 @@ def _date(s: str | None) -> dt.date | None:
     return dt.date.fromisoformat(s) if s is not None else None
 
 
+def _fts_text(c: ObservedChunk) -> str:
+    """What actually gets indexed for search — content plus the heading, so
+    a query using the section's own wording (e.g. "students found work",
+    matching a guidance page's own heading) finds it even when the body
+    prose doesn't happen to repeat that phrasing. Displayed `content` stays
+    the clean rule text; only the search surface widens.
+    """
+    return f"{c.anchor.section} {c.content}" if c.anchor.section else c.content
+
+
 def _meta_params(c: ObservedChunk) -> tuple[str | None, str, str | None, str | None, str | None]:
     """The mutable-metadata columns shared by a fresh insert and an in-place
     enrich of an unchanged version: area, profiles, valid_from/to, amended_by.
@@ -164,7 +174,7 @@ class Store:
             ),
         )
         self._conn.execute(
-            "INSERT INTO fts(rowid, content) VALUES (?, ?)", (cur.lastrowid, c.content)
+            "INSERT INTO fts(rowid, content) VALUES (?, ?)", (cur.lastrowid, _fts_text(c))
         )
 
     def _close(self, version_id: int, observed: dt.date) -> None:

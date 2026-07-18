@@ -113,3 +113,30 @@ class TestNoData:
     def test_no_hits_returns_empty_not_padded(self, store: Store) -> None:
         hits = search(store, query="skatteverket sink gränspendlare")
         assert hits == []
+
+
+class TestHeadingIsSearchable:
+    def test_query_matching_only_the_heading_still_finds_the_chunk(self, store: Store) -> None:
+        """Regression: a guidance chunk's heading is often the most natural
+        phrasing a user/agent would search with, but the body prose doesn't
+        always repeat it — e.g. Migrationsverket's real "Students who have
+        found work are exempt from the salary requirement" heading, whose
+        body text never says "found". The heading itself must be searchable,
+        not just the body content that gets displayed.
+        """
+        chunk = ObservedChunk(
+            chunk_id="guid/mv/found-work/en",
+            content="If you hold a residence permit as a student, you are exempt "
+            "from the usual income threshold for your first application.",
+            language="en",
+            anchor=Anchor(
+                SourceType.GUIDANCE,
+                "https://mv.se/students-found-work",
+                section="Students who have found work are exempt from the salary requirement",
+            ),
+            source_url="https://mv.se/students-found-work",
+            area="work_permit",
+        )
+        store.ingest("https://mv.se/students-found-work", [chunk], observed=D1)
+        hits = search(store, query="students found work")
+        assert any(h.version.chunk.chunk_id == "guid/mv/found-work/en" for h in hits)

@@ -83,6 +83,30 @@ class TestAnchorAndMetadata:
         assert len(ids) == len(set(ids))
 
 
+class TestIntroContent:
+    def test_lead_paragraph_before_first_heading_is_not_dropped(self) -> None:
+        """Regression: a real page (permanent-residence-permit.html) has its
+        core eligibility explanation as a lead paragraph before any h2 — an
+        earlier version of this parser silently discarded all content before
+        the first heading, keeping only a minor edge-case subsection."""
+        html = """
+        <main>
+          <h1>Permanent residence permit</h1>
+          <p>You have a residence permit in Sweden and now want to apply for
+          a permanent residence permit. To be granted one, you must meet
+          special requirements relating to financial maintenance and conduct.</p>
+          <h2>A permanent residence permit can be revoked</h2>
+          <p>If you are no longer resident in Sweden, the Migration Agency
+          can revoke your permit under certain circumstances described here.</p>
+        </main>
+        """
+        page = parse_guidance_page(html, "https://example.com/put.html")
+        sections = {c.anchor.section: c.content for c in page.chunks}
+        assert "Permanent residence permit" in sections
+        assert "special requirements" in sections["Permanent residence permit"]
+        assert "A permanent residence permit can be revoked" in sections
+
+
 class TestNoiseFiltering:
     def test_short_nav_only_section_is_dropped(self) -> None:
         html = """

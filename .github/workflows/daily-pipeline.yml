@@ -1,0 +1,36 @@
+name: Daily snapshot build
+
+# Plan §5: incremental crawl → parse → diff → version chain → snapshot,
+# running on GitHub Actions rather than a VPS (ADR-0001). Build logs are
+# public here, which is the crawl-behavior audit trail referenced in plan §2.2.
+#
+# M1 scope: Riksdagen (legal sources) only. Migrationsverket guidance-page
+# ingestion is not wired in yet — it is gated behind the per-site villkor
+# verification required by ADR-0004 / plan §2.2, not yet done.
+#
+# Publishing the snapshot to GitHub Releases (plan §4.2) is deferred to M5
+# (first public distribution); until then this job builds the snapshot and
+# uploads it as a workflow artifact so build health is visible without
+# shipping unreviewed data.
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # 03:00 UTC daily
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv sync
+      - name: Build snapshot
+        run: uv run vistas-build --db snapshot.db
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vistas-snapshot
+          path: snapshot.db
+          retention-days: 14

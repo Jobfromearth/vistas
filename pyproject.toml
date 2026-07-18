@@ -1,0 +1,48 @@
+[project]
+name = "vistas-mcp"
+version = "0.1.0"
+description = "Swedish immigration & work-regulation data service for the agent ecosystem — versioned rules with official citations, distributed as a local MCP server."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Haobo Zu", email = "haobo5869@gmail.com" }]
+dependencies = [
+    "mcp>=1.2",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+vistas-mcp = "vistas.server:main"
+vistas-build = "vistas.pipeline.build:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vistas"]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "anyio>=4.0",
+    "mypy>=1.10",
+    "ruff>=0.6",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+strict = true
+packages = ["vistas"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = ["live: hits real external APIs (deselect with '-m \"not live\"')"]

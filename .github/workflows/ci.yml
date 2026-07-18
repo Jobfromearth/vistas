@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+      - run: uv sync
+      - name: Type check
+        run: uv run mypy
+      - name: Lint
+        run: uv run ruff check
+      # Structural regression coverage for the three plan-§6 gate categories
+      # (retrieval correctness, citation accuracy, version-chain correctness) —
+      # not yet the full gate: that needs the curated 50-100 QA set and
+      # Chinese-query end-to-end cases plan §6 specifies, which are M4 work.
+      # Live network calls excluded (tests/test_riksdagen_client.py, 'live' marker).
+      - name: Test
+        run: uv run pytest -m "not live"

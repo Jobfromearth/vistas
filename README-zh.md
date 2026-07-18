@@ -28,7 +28,7 @@
 | M5 发布 | 发布到 PyPI、快照发 GitHub Releases | ⏳ 尚未发布 |
 | M6 扩展 | 跨境税务（Skatteverket/SINK）、更多 Migrationsverket P0 页面、rättsliga ställningstaganden | ⏳ 尚未实现 |
 
-**合规状态：** 与法条文本不同，机构撰写的散文内容不会自动免版权，所以按 [ADR-0004](docs/adr/0004-fully-open-dataset.md) 的门禁，全文再分发要先核实各站使用条款。migrationsverket.se 主站的核实已经完成——网页散文内容以 **CC-BY**（需署名）整页再分发已确认可行，见 [`docs/research/migrationsverket-villkor.md`](docs/research/migrationsverket-villkor.md)。`rättsliga ställningstaganden` 法律立场文件（托管在独立的 Lifos 平台）仍未核实，继续排除在外，直到单独核实完成。
+**合规状态：** 与法条文本不同，机构撰写的散文内容不会自动免版权，所以按 [ADR-0004](docs/adr/0004-fully-open-dataset.md) 的门禁，全文再分发要先核实各站使用条款。migrationsverket.se 主站的核实已经完成——网页散文内容以 **CC-BY**（需署名）整页再分发已确认可行，见 [`docs/research/migrationsverket-villkor.md`](docs/research/migrationsverket-villkor.md)。`rättsliga ställningstaganden` 法律立场文件（托管在独立的 Lifos 平台）已经补充核实过（[`docs/research/migrationsverket-lifos-villkor.md`](docs/research/migrationsverket-lifos-villkor.md)）：没找到明文许可，但找到一个站得住脚的法条依据（瑞典著作权法 9§ 或 26a§——跟现在用来豁免 SFS 法条版权的是同一类条款），推断这类文件也可以自由复制。这只是法律推断，没有判例支撑，所以摄取门禁继续保持关闭，等 M5 前的正式法律复核确认后再放开。
 
 **检索准确率抽查：** 还没有做正式评测（那是 M4 的事，目前只有 CI 骨架）。扩展指南覆盖面的同时做了一轮更轻量的 sanity check——针对上面 8 个主题跑真实查询（含瑞典语和中英混合措辞），首轮只有 5/8 命中，排查暴露出一个真 bug：章节标题文本没有被收入检索索引，导致照抄标题措辞的自然问法（比如"students found work"）明明有对应内容却查不到；修复后复跑全部 8/8 命中。详见计划书 §7 记录，回归测试见 `tests/test_retrieval.py::TestHeadingIsSearchable`。
 

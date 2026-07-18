@@ -61,6 +61,18 @@ async def test_unknown_chunk_round_trip_is_no_data(store: Store) -> None:
     assert _unwrap(result)["status"] == "no_data"
 
 
+@pytest.mark.anyio
+async def test_skill_resource_is_registered_and_readable(store: Store) -> None:
+    server = build_server(store)
+    resources = await server.list_resources()
+    assert any(str(r.uri) == "vistas://skill" for r in resources)
+
+    contents = await server.read_resource("vistas://skill")
+    [content] = list(contents)
+    assert "search_rules" in content.content
+    assert "not legal advice" in content.content.lower()
+
+
 def _unwrap(result: object) -> dict:  # type: ignore[type-arg]
     """call_tool returns either a dict directly or (content_blocks, dict)."""
     if isinstance(result, tuple):

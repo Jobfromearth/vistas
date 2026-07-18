@@ -20,7 +20,7 @@
 |---|---|---|
 | M1 数据打通 | Riksdagen SFS 入库（Utlänningslagen 2005:716）、§级切分与法律生效日期提取；Migrationsverket 指南页入库（种子页）、章节级切分；两者均支持双时间轴版本链 | ✅ 已完成 |
 | M2 MCP 最小可用 | FTS5 词法检索、stdio server | ✅ 已完成 |
-| M3 版本化能力 | `rule_timeline`、`recent_changes`（提前完成）；`topic` 查找、真实画像标注、SKILL.md | 🚧 部分完成 |
+| M3 版本化能力 | `rule_timeline`、`recent_changes`（提前完成）；SKILL.md（同时以 `vistas://skill` MCP resource 形式提供）；`topic` 查找、真实画像标注仍待做 | 🚧 部分完成 |
 | M4 评测与门禁 | GitHub Actions CI（mypy/ruff/pytest）；精标 QA 集与中文端到端评测 | 🚧 仅有 CI 骨架 |
 | M5 发布 | 发布到 PyPI、快照发 GitHub Releases | ⏳ 尚未发布 |
 | M6 扩展 | 跨境税务（Skatteverket/SINK）、更多 Migrationsverket P0 页面、rättsliga ställningstaganden | ⏳ 尚未实现 |
@@ -63,6 +63,7 @@ uv run ruff check
 
 ## 了解更多
 
+- [SKILL.md](SKILL.md) — 如何把四个 tool 用好（同时以 `vistas://skill` MCP resource 形式实时提供，任何连接的客户端不需要本地克隆仓库也能读到）
 - [瑞典移民助手-项目计划书.md](瑞典移民助手-项目计划书.md) — 完整项目计划书
 - [CONTEXT.md](CONTEXT.md) — 领域术语表
 - [docs/adr/](docs/adr/) — 架构决策记录

@@ -20,7 +20,7 @@ Implemented and tested end-to-end against the real [Riksdagen open data API](htt
 |---|---|---|
 | M1 — data pipeline | Riksdagen SFS ingestion (Utlänningslagen 2005:716), §-level chunking with legal-date extraction; Migrationsverket guidance-page ingestion (seed page), section-level chunking; bitemporal version chains for both | ✅ done |
 | M2 — MCP minimal | FTS5 lexical retrieval, stdio server | ✅ done |
-| M3 — versioning tools | `rule_timeline`, `recent_changes` (ahead of schedule); `topic` lookup, real profile tagging, SKILL.md | 🚧 partial |
+| M3 — versioning tools | `rule_timeline`, `recent_changes` (ahead of schedule); SKILL.md (also served as the `vistas://skill` MCP resource); `topic` lookup, real profile tagging still to-do | 🚧 partial |
 | M4 — eval & CI gates | GitHub Actions CI (mypy/ruff/pytest); curated QA set + Chinese end-to-end eval | 🚧 CI skeleton only |
 | M5 — release | Publish to PyPI, ship snapshot on GitHub Releases | ⏳ not yet published |
 | M6 — expansion | Cross-border tax (Skatteverket/SINK), more Migrationsverket P0 pages, rättsliga ställningstaganden | ⏳ not implemented |
@@ -63,6 +63,7 @@ uv run ruff check
 
 ## Learn more
 
+- [SKILL.md](SKILL.md) — how to use the four tools well (also served live as the `vistas://skill` MCP resource, so any connected client can read it without a local checkout)
 - [瑞典移民助手-项目计划书.md](瑞典移民助手-项目计划书.md) — full project plan (Chinese)
 - [CONTEXT.md](CONTEXT.md) — domain glossary
 - [docs/adr/](docs/adr/) — architecture decisions

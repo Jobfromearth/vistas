@@ -7,11 +7,31 @@ sourced regulatory data service; individual-case outcomes are out of scope.
 
 from __future__ import annotations
 
+from importlib import resources
+from pathlib import Path
+
 from mcp.server.fastmcp import FastMCP
 
 from vistas import tools
 from vistas.config import DB_PATH_ENV, default_db_path
 from vistas.store import Store
+
+
+def _read_skill() -> str:
+    """SKILL.md ships as package data (see pyproject.toml force-include) so
+    it's available even when installed via `uvx vistas-mcp` with no local
+    repo checkout — the whole point of exposing it as an MCP resource
+    instead of just a file the calling agent has to know to go find.
+
+    force-include only runs at wheel-build time, so an editable dev install
+    (`uv sync` against this checkout) has no vistas/SKILL.md inside the
+    package — fall back to the repo-root copy in that case.
+    """
+    packaged = resources.files("vistas").joinpath("SKILL.md")
+    if packaged.is_file():
+        return packaged.read_text(encoding="utf-8")
+    repo_root_copy = Path(__file__).resolve().parents[2] / "SKILL.md"
+    return repo_root_copy.read_text(encoding="utf-8")
 
 _BOUNDARY = (
     "Not legal advice (inte juridisk rådgivning) — a sourced regulatory data "
@@ -25,11 +45,28 @@ def build_server(store: Store) -> FastMCP:
     mcp: FastMCP = FastMCP(
         name="vistas",
         instructions=(
-            "Swedish immigration & work-regulation rule lookup. "
-            "Queries must be Swedish or English keywords — translate the "
-            "user's question before calling. " + _BOUNDARY
+            "Swedish immigration & work-regulation rule lookup. Read the "
+            "'vistas://skill' resource before your first call — it covers "
+            "which tool to use, how to phrase queries (Swedish/English "
+            "keywords — translate the user's question first), and how to "
+            "present citations and the time axes. " + _BOUNDARY
         ),
     )
+
+    @mcp.resource(
+        "vistas://skill",
+        name="skill",
+        title="How to use Vistas",
+        description=(
+            "Read this before calling any Vistas tool: which tool for which "
+            "question, how to phrase queries (Swedish/English keywords), how "
+            "to present citations and the observed/legal-validity time axes, "
+            "and where the boundary to 'not legal advice' is."
+        ),
+        mime_type="text/markdown",
+    )
+    def skill() -> str:
+        return _read_skill()
 
     @mcp.tool(
         description=(

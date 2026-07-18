@@ -1,10 +1,13 @@
 # Vistas
 
+[![CI](https://github.com/Jobfromearth/vistas/actions/workflows/ci.yml/badge.svg)](https://github.com/Jobfromearth/vistas/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **[中文](README-zh.md)**
 
 Swedish immigration & work-regulation data service for the agent ecosystem — every answer carries an official citation and a timeline of when the rule changed.
 
-Not a chatbot, not a web app: a **local MCP server**. `uvx vistas-mcp` runs on your own machine against an openly licensed SQLite snapshot. Your queries never leave your machine — there is no backend to send them to.
+Not a chatbot, not a web app: a **local MCP server**. It runs on your own machine against an openly licensed SQLite snapshot. Your queries never leave your machine — there is no backend to send them to. (Not on PyPI yet, so it's `uv run vistas-mcp` from a clone today, not `uvx vistas-mcp` — see Quick Start.)
 
 - **Not legal advice** (inte juridisk rådgivning) — a sourced regulatory data service only. Doesn't judge individual cases ("will my application be approved"); returns only the rules themselves, each with a citation. No citable answer → explicit "no data," never a guess.
 - **Layered citations, honestly.** Legal sources (SFS via Riksdagen open data) are cited to paragraph level (kap. + §). Agency guidance is cited to page + section level. Every result says which kind it is — no pretending guidance has the precision of statute.
@@ -44,15 +47,43 @@ Every result carries: content, a layered citation anchor, the official source UR
 
 ## Quick start (from source)
 
+Aimed at both humans and coding agents (Claude Code, Codex, etc.) — if you're
+an agent reading this to set Vistas up, run these in order; the last step
+fails on purpose with a self-explanatory message if you skip the first two.
+
 ```
 git clone https://github.com/Jobfromearth/vistas.git
 cd vistas
-uv sync
-uv run vistas-build          # builds a local snapshot from Riksdagen + Migrationsverket
-uv run vistas-mcp            # starts the stdio MCP server against it
+uv sync                      # installs dependencies
+uv run vistas-build          # builds a local snapshot from Riksdagen + Migrationsverket (~10s, live network)
+uv run vistas-mcp            # sanity check: starts the stdio server: Ctrl-C once it's running
 ```
 
-Point your MCP client (Claude Code, Codex, etc.) at `uv run vistas-mcp` in this directory.
+### Connect an MCP client
+
+**Claude Code** — this repo ships a project-level `.mcp.json`, so opening
+this directory in Claude Code (or pointing it at the clone) offers to connect
+automatically. To register it manually instead, or from outside the repo:
+
+```
+claude mcp add vistas -- uv run --directory /path/to/vistas vistas-mcp
+```
+
+**Codex CLI** — add to `~/.codex/config.toml` (check `codex mcp --help` for
+your installed version's exact syntax, this has moved before):
+
+```toml
+[mcp_servers.vistas]
+command = "uv"
+args = ["run", "--directory", "/path/to/vistas", "vistas-mcp"]
+```
+
+**Any other MCP client** — point it at the command `uv run vistas-mcp` with
+this repo as the working directory (stdio transport).
+
+Once connected, read the `vistas://skill` resource (or [SKILL.md](SKILL.md)
+directly) before making tool calls — it covers query phrasing and how to
+present citations correctly.
 
 ## Development
 

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vistas": {
+      "command": "uv",
+      "args": ["run", "vistas-mcp"]
+    }
+  }
+}

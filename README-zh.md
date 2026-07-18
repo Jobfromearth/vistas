@@ -1,10 +1,13 @@
 # Vistas
 
+[![CI](https://github.com/Jobfromearth/vistas/actions/workflows/ci.yml/badge.svg)](https://github.com/Jobfromearth/vistas/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 **[English](README.md)**
 
 面向 agent 生态的瑞典移民与求职法规数据服务——每个回答都带官方出处，以及"该规则何时变过"的时间线。
 
-不是聊天机器人，也不是网页应用：是一个**本地 MCP server**。`uvx vistas-mcp` 跑在你自己的机器上，查询一份开放许可的 SQLite 快照。你的问题永远不会离开本机——因为根本没有后端可以发给它。
+不是聊天机器人，也不是网页应用：是一个**本地 MCP server**。跑在你自己的机器上，查询一份开放许可的 SQLite 快照。你的问题永远不会离开本机——因为根本没有后端可以发给它。（还没上 PyPI，现在是从源码克隆用 `uv run vistas-mcp` 跑，还不是 `uvx vistas-mcp` 一条命令——见下方快速开始。）
 
 - **不是法律建议**（inte juridisk rådgivning）——只是一个带出处的法规数据服务。不判断个案（"我的申请会不会被拒"），只返回规则本身，且每条都带引用。给不出引用就明确返回"无数据"，绝不硬凑。
 - **分层引用，诚实到底。** 法律源（Riksdagen 开放数据的 SFS 法条）引用到条款级（kap. + §）；机构指南引用到页面+章节级。每条结果都会说明自己是哪一层——不会把指南内容包装成法条级别的精度。
@@ -44,15 +47,35 @@
 
 ## 快速开始（源码运行）
 
+面向人类和 agent（Claude Code、Codex 等）都可以直接照做——如果你是正在读这份文档来配置 Vistas 的 agent，按顺序跑；最后一步如果跳过前两步会故意失败，并给出明确的提示信息。
+
 ```
 git clone https://github.com/Jobfromearth/vistas.git
 cd vistas
-uv sync
-uv run vistas-build          # 从 Riksdagen + Migrationsverket 构建本地快照
-uv run vistas-mcp            # 针对该快照启动 stdio MCP server
+uv sync                      # 装依赖
+uv run vistas-build          # 从 Riksdagen + Migrationsverket 构建本地快照（约 10 秒，需要联网）
+uv run vistas-mcp            # 冒烟测试：启动 stdio server，确认能跑起来后 Ctrl-C
 ```
 
-把你的 MCP 客户端（Claude Code、Codex 等）指向本目录下的 `uv run vistas-mcp`。
+### 接入 MCP 客户端
+
+**Claude Code**——本仓库自带一个项目级 `.mcp.json`，在这个目录里打开 Claude Code（或指向这个克隆），会自动提示接入。也可以手动注册，或从仓库外注册：
+
+```
+claude mcp add vistas -- uv run --directory /path/to/vistas vistas-mcp
+```
+
+**Codex CLI**——加到 `~/.codex/config.toml`（具体语法请以 `codex mcp --help` 为准，这块之前改过）：
+
+```toml
+[mcp_servers.vistas]
+command = "uv"
+args = ["run", "--directory", "/path/to/vistas", "vistas-mcp"]
+```
+
+**其他 MCP 客户端**——指向命令 `uv run vistas-mcp`，工作目录设为本仓库（stdio 传输）。
+
+接入后，先读 `vistas://skill` 这个 resource（或直接看 [SKILL.md](SKILL.md)）再调用 tool——里面讲了查询该怎么措辞、引用该怎么呈现。
 
 ## 开发
 

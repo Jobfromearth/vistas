@@ -4,9 +4,15 @@ name: Daily snapshot build
 # running on GitHub Actions rather than a VPS (ADR-0001). Build logs are
 # public here, which is the crawl-behavior audit trail referenced in plan §2.2.
 #
-# M1 scope: Riksdagen (legal sources) only. Migrationsverket guidance-page
-# ingestion is not wired in yet — it is gated behind the per-site villkor
-# verification required by ADR-0004 / plan §2.2, not yet done.
+# Legal source (Riksdagen) and the compliance-cleared Migrationsverket P0
+# guidance pages (ADR-0004's 2026-07-18 update) are both built here.
+# rättsliga ställningstaganden / Lifos stay excluded — gate not yet open,
+# see docs/research/migrationsverket-lifos-villkor.md.
+#
+# After building, runs the curated QA-set eval (tests/eval/) against the
+# freshly built snapshot — the plan §6 "检索正确性"/"无数据行为" check, live
+# and network-dependent so it runs here on schedule rather than gating
+# every PR in ci.yml (which stays fast and network-free by design).
 #
 # Publishing the snapshot to GitHub Releases (plan §4.2) is deferred to M5
 # (first public distribution); until then this job builds the snapshot and
@@ -29,6 +35,10 @@ jobs:
       - run: uv sync
       - name: Build snapshot
         run: uv run vistas-build --db snapshot.db
+      - name: Run QA-set eval against the freshly built snapshot
+        env:
+          VISTAS_EVAL_DB: snapshot.db
+        run: uv run pytest tests/eval/ -m live -v
       - uses: actions/upload-artifact@v4
         with:
           name: vistas-snapshot

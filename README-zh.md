@@ -24,13 +24,13 @@
 | M1 数据打通 | Riksdagen SFS 入库（Utlänningslagen 2005:716）、§级切分与法律生效日期提取；Migrationsverket 指南页入库——覆盖计划书目标签证问题集全部主题（学签、求职签、学签转工签、工签、PUT、家属签、旅游、探亲访友，共 8 个页面）、章节级切分；两者均支持双时间轴版本链。其中两个 area（`job_seeking` 求职签、`family` 家属签）目前只有指南内容——Riksdagen 那边的章节→area 映射还没扩展到覆盖这两类，按这两个 area 过滤检索不到法条原文，只有指南 | ✅ 已完成 |
 | M2 MCP 最小可用 | FTS5 词法检索、stdio server | ✅ 已完成 |
 | M3 版本化能力 | `rule_timeline`、`recent_changes`（提前完成）；SKILL.md（同时以 `vistas://skill` MCP resource 形式提供）；`topic` 查找、真实画像标注仍待做 | 🚧 部分完成 |
-| M4 评测与门禁 | GitHub Actions CI（mypy/ruff/pytest）；精标 QA 集与中文端到端评测 | 🚧 仅有 CI 骨架 |
+| M4 评测与门禁 | GitHub Actions CI（mypy/ruff/pytest，引用准确率与版本链正确性门禁）；精标 QA 集（`tests/eval/`，覆盖检索正确性+无数据行为，接入每日流水线跑）；真实中文翻译评测、响应速度追踪仍待做 | 🚧 部分完成 |
 | M5 发布 | 发布到 PyPI、快照发 GitHub Releases | ⏳ 尚未发布 |
 | M6 扩展 | 跨境税务（Skatteverket/SINK）、更多 Migrationsverket P0 页面、rättsliga ställningstaganden | ⏳ 尚未实现 |
 
 **合规状态：** 与法条文本不同，机构撰写的散文内容不会自动免版权，所以按 [ADR-0004](docs/adr/0004-fully-open-dataset.md) 的门禁，全文再分发要先核实各站使用条款。migrationsverket.se 主站的核实已经完成——网页散文内容以 **CC-BY**（需署名）整页再分发已确认可行，见 [`docs/research/migrationsverket-villkor.md`](docs/research/migrationsverket-villkor.md)。`rättsliga ställningstaganden` 法律立场文件（托管在独立的 Lifos 平台）已经补充核实过（[`docs/research/migrationsverket-lifos-villkor.md`](docs/research/migrationsverket-lifos-villkor.md)）：没找到明文许可，但找到一个站得住脚的法条依据（瑞典著作权法 9§ 或 26a§——跟现在用来豁免 SFS 法条版权的是同一类条款），推断这类文件也可以自由复制。这只是法律推断，没有判例支撑，所以摄取门禁继续保持关闭，等 M5 前的正式法律复核确认后再放开。
 
-**检索准确率抽查：** 还没有做正式评测（那是 M4 的事，目前只有 CI 骨架）。扩展指南覆盖面的同时做了一轮更轻量的 sanity check——针对上面 8 个主题跑真实查询（含瑞典语和中英混合措辞），首轮只有 5/8 命中，排查暴露出一个真 bug：章节标题文本没有被收入检索索引，导致照抄标题措辞的自然问法（比如"students found work"）明明有对应内容却查不到；修复后复跑全部 8/8 命中。详见计划书 §7 记录，回归测试见 `tests/test_retrieval.py::TestHeadingIsSearchable`。
+**检索准确率评测：** 现在有一份真正脚本化的评测集了——[`tests/eval/qa_set.yaml`](tests/eval/qa_set.yaml)，17 道题，全部扎根于已摄取的真实内容（每道题的"标准答案"就是它反推所本的那个 chunk），另外含 2 条超范围问题的 `no_data` 用例。接入每日流水线，针对刚构建好的快照跑（联网依赖，所以没放进快、不联网的 PR 门禁 `ci.yml`，具体理由写在 workflow 注释里）。目前 17/17。还不是计划书要的完整 50–100 条，而且测的是"给定一个已经翻译正确的查询，检索能不能找对 chunk"，不是"LLM 翻译中文问题准不准"——后者需要真实调用模型，还是手动/夜间档的缺口，没自动化。搭这个的过程中暴露了两个值得知道的检索特性（写在 YAML 对应条目的注释里）：不同页面之间存在近乎逐字重复的模板文字，通用查询没法唯一区分；纯 AND 检索设计（ADR-0003）对查询词极度敏感——多加一个原文里没出现的词就能让命中变成落空。这也是为什么 [SKILL.md](SKILL.md) 会教 agent 遇到 `no_data` 先换词重试，而不是直接放弃。
 
 还没上 PyPI——在 M5 之前请从源码克隆运行（见下方）。
 

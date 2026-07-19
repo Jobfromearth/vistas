@@ -1,0 +1,189 @@
+# Curated QA set (plan §6 "检索正确性" — a first real installment, not the
+# full 50-100-question target yet). Each entry's `chunk_id` is the ground
+# truth: it's the real chunk the question was written FROM (reading actual
+# ingested Migrationsverket/Riksdagen content), not independently verified
+# against outside legal knowledge — correctness rests on trusting Vistas'
+# own already-ingested official text, which is the right scope for this
+# eval (it tests retrieval, not whether Migrationsverket's own text is
+# accurate).
+#
+# `query` is the keyword string a calling agent is assumed to have already
+# produced (per ADR-0003, translation is the caller's job, not Vistas').
+# `question_en`/`question_zh` are the natural-language questions a real
+# user might ask, kept for documentation/readability — they are NOT sent to
+# search_rules directly; `query` is. This means the Chinese entries test
+# "does retrieval work given a correct translation," not "can an LLM
+# translate this correctly" — that needs a live model call and belongs in
+# the separate, non-CI-gated end-to-end tier (plan §6, LLM-as-Judge row).
+#
+# `expect` is "hit" (chunk_id must appear in top-10 results) or "no_data"
+# (search_rules must return no_data — plan §6's "无数据行为" dimension).
+
+- id: qa-001
+  area: work_permit
+  chunk_id: guid/employees/how-high-a-salary-wages-do-i-need-to-have-to-meet-the-salary-requirement/en
+  expect: hit
+  question_en: What is the salary requirement for a work permit?
+  question_zh: 工签的工资门槛是多少？
+  query: salary requirement work permit
+  note: "SEK 34,470/month, 90% of median salary"
+
+- id: qa-002
+  area: work_permit
+  chunk_id: guid/employees/you-must-be-able-to-financially-support-your-family/en
+  expect: hit
+  question_en: What income do I need to bring my family with my work permit?
+  question_zh: 工签带家属需要满足什么收入要求？
+  query: financially support family maintenance requirement
+  note: maintenance requirement for family members applying together
+
+- id: qa-003
+  area: work_permit
+  chunk_id: sfs-2005:716/6/2 c/sv
+  expect: hit
+  question_en: Can a work permit be refused because of the employer's criminal record?
+  question_zh: 雇主有犯罪记录会导致工签被拒吗？
+  query: arbetstillstånd vägras arbetsgivare brott
+  note: Utlänningslagen 6 kap. 2 c § — refusal grounds tied to employer conduct
+
+- id: qa-004
+  area: study
+  chunk_id: guid/higher-education/how-long-must-i-wait-for-a-decision/en
+  expect: hit
+  question_en: How long does it take to get a decision on a study permit application?
+  question_zh: 学签申请审批要等多久？
+  query: how long wait decision study permit application
+  note: processing time depends on application completeness
+
+- id: qa-005
+  area: study
+  chunk_id: sfs-2005:716/5 b/5/sv
+  expect: hit
+  question_en: Can I get a residence permit for an EU volunteer programme?
+  question_zh: 参加欧盟志愿服务项目能拿到居留许可吗？
+  query: volontärprogram europeisk volontärtjänst uppehållstillstånd
+  note: Utlänningslagen 5 b kap. 5 § — European Voluntary Service permits
+
+- id: qa-006
+  area: put
+  chunk_id: sfs-2005:716/5 a/5/sv
+  expect: hit
+  question_en: Under what circumstances is permanent residence status revoked?
+  question_zh: 什么情况下永居身份会被撤销？
+  query: varaktigt bosatt återkallas
+  note: "grounds: false info, deportation, threat to public order, 12mo absence from EU"
+
+- id: qa-007
+  area: put
+  chunk_id: guid/permanent-residence-permit/a-permanent-residence-permit-can-be-revoked/en
+  expect: hit
+  question_en: Can Migrationsverket revoke my permanent residence permit if I move abroad?
+  question_zh: 我如果搬去国外，永居许可会被吊销吗？
+  query: permanent residence permit revoked no longer resident abroad
+  note: guidance-page counterpart to qa-006
+
+- id: qa-008
+  area: family
+  chunk_id: guid/family-of-an-employee-or-self-employed-person-who-apply-afterwards/family-member-of-an-employee/en
+  expect: hit
+  question_en: Who counts as a family member when applying to join a work permit holder?
+  question_zh: 工签持有者的家属签证，哪些人算"家庭成员"？
+  query: family members employee spouse cohabiting partner children
+  note: spouses, cohabiting/registered partners, unmarried children under 21
+
+- id: qa-009
+  area: job_seeking
+  chunk_id: guid/look-for-work-after-completing-your-studies-in-sweden/what-does-completed-studies-mean/en
+  expect: hit
+  question_en: What counts as "completed studies" for the job-seeking permit after graduation?
+  question_zh: 求职签所说的"完成学业"具体指什么？
+  query: completed entire higher education programme passing grades
+  note: |
+    Regression note: an earlier version of this entry used chunk_id
+    guid/.../prepare-this-before-you-apply/en with query "translate
+    documents certified translation application" — that failed, not from a
+    bug, but because 4 different guidance pages share near-identical
+    "translate your documents" boilerplate under the same heading, so BM25
+    can't uniquely disambiguate a generic query against duplicated content.
+    Real finding, kept as a lesson: pick QA queries specific enough to
+    distinguish real duplicate boilerplate across pages.
+
+- id: qa-010
+  area: visa
+  chunk_id: guid/visiting-sweden-for-up-to-90-days-entry-visa/apply-for-a-schengen-visa/en
+  expect: hit
+  question_en: Where do I apply for a Schengen visa to visit Sweden?
+  question_zh: 去瑞典的申根签证在哪里申请？
+  query: apply Schengen visa VFS Global embassy
+  note: mostly via VFS Global, or embassy/consulate depending on country
+
+- id: qa-011
+  area: visa
+  chunk_id: sfs-2005:716/3/4/sv
+  expect: hit
+  question_en: Can a Swedish national visa be granted for longer than a Schengen visa?
+  question_zh: 瑞典国家签证能签发比申根签证更长的时间吗？
+  query: nationell visering särskilda skäl längre tid
+  note: Utlänningslagen 3 kap. 4 § — national visa, special grounds
+
+- id: qa-012
+  area: residence_permit
+  chunk_id: sfs-2005:716/5/9/sv
+  expect: hit
+  question_en: Can international graduates get a residence permit to look for work in Sweden?
+  question_zh: 留学生毕业后能拿居留许可留在瑞典找工作吗？
+  query: söka arbete undersöka näringsverksamhet examen avancerad nivå
+  note: Utlänningslagen 5 kap. 9 § — job-seeking permit after advanced degree
+
+- id: qa-013
+  area: entry_and_stay
+  chunk_id: sfs-2005:716/2@2026-07-12/8 c/sv
+  expect: hit
+  question_en: Do Nordic citizens need a work permit to work in Sweden?
+  question_zh: 北欧国家公民在瑞典工作需要工签吗？
+  query: medborgare Danmark Finland Island Norge arbetstillstånd
+  note: |
+    Nordic citizens (DK/FI/IS/NO) exempt from work permit requirement.
+    Regression note: an earlier version of this query added "undantag"
+    (exemption) — a natural word for the English question's "exempt" but
+    one that never literally appears in the statute text itself (Utl.
+    2 kap. 8 c § phrases it as a plain list under "gäller inte", not the
+    word "undantag") — and the pure-AND query design (ADR-0003) means one
+    extra word not in the target broke the whole match, 0 hits. Real
+    finding about lexical-AND fragility, kept as a lesson.
+
+- id: qa-014
+  area: eu_blue_card
+  chunk_id: sfs-2005:716/6 a/10 a/sv
+  expect: hit
+  question_en: Can EU Blue Card family members combine residence time from different EU countries?
+  question_zh: EU 蓝卡持有者家属能合并计算在不同欧盟国家的居住时间吗？
+  query: EU-blåkort familjemedlem vistelser flera EU-stater
+  note: Utlänningslagen 6 a kap. 10 a § — cross-country residence aggregation
+
+- id: qa-015
+  area: work_permit
+  chunk_id: guid/students-who-have-found-work/students-who-have-found-work-are-exempt-from-the-salary-requirement/en
+  expect: hit
+  question_en: Are students who found a job exempt from the work permit salary requirement?
+  question_zh: 找到工作的留学生，工签工资门槛能豁免吗？
+  query: students found work exempt salary requirement
+  note: regression case for the FTS heading-indexing fix, kept as a QA entry too
+
+- id: qa-016
+  area: none
+  chunk_id: null
+  expect: no_data
+  question_en: What is the SINK tax rate for cross-border commuters?
+  question_zh: 跨境通勤者的 SINK 税率是多少？
+  query: SINK skatt gränspendlare
+  note: "Skatteverket/cross-border tax content is M6 scope, not ingested yet — must return no_data, not a guess"
+
+- id: qa-017
+  area: none
+  chunk_id: null
+  expect: no_data
+  question_en: What are the requirements for Swedish citizenship by naturalization?
+  question_zh: 加入瑞典国籍需要满足什么条件？
+  query: svenskt medborgarskap naturalisation krav
+  note: citizenship law is out of scope entirely, not just unfetched — must return no_data

@@ -107,3 +107,21 @@ If `search_rules` returns `no_data` for a real, in-scope question, say so
 explicitly — don't paper over the gap with general knowledge. Vistas' whole
 value is "no answer without a citation"; breaking that in your own response
 defeats the point of using it.
+
+## 5. If the user says an answer looks wrong
+
+Vistas has no telemetry — it doesn't see your conversation, so a wrong or
+outdated answer only gets fixed if someone reports it. If the user says a
+citation looks wrong, outdated, or contradicts what they know is true,
+don't argue from your own general knowledge either way — offer to file a
+report:
+
+> "I can't verify this myself, but you can report it at
+> https://github.com/Jobfromearth/vistas/issues — that's how the maintainer
+> finds out something needs fixing."
+
+If they want to, help them write it: include the exact query you sent, the
+`chunk_id`/`anchor` of the result in question, what looks wrong, and (if
+they know) what the correct answer should be. This is fully optional and
+public — Vistas never asks for this, never collects it automatically, and
+nothing is sent unless the user chooses to open the issue themselves.

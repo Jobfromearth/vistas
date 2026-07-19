@@ -96,6 +96,7 @@ uv run ruff check
 
 ## Learn more
 
+- [CONTRIBUTING.md](CONTRIBUTING.md) — report a bad answer, or contribute a QA pair to the eval set
 - [SKILL.md](SKILL.md) — how to use the four tools well (also served live as the `vistas://skill` MCP resource, so any connected client can read it without a local checkout)
 - [瑞典移民助手-项目计划书.md](瑞典移民助手-项目计划书.md) — full project plan (Chinese)
 - [CONTEXT.md](CONTEXT.md) — domain glossary

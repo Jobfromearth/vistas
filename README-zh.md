@@ -88,6 +88,7 @@ uv run ruff check
 
 ## 了解更多
 
+- [CONTRIBUTING.md](CONTRIBUTING.md) — 怎么报错、怎么给评测集贡献 QA 对
 - [SKILL.md](SKILL.md) — 如何把四个 tool 用好（同时以 `vistas://skill` MCP resource 形式实时提供，任何连接的客户端不需要本地克隆仓库也能读到）
 - [瑞典移民助手-项目计划书.md](瑞典移民助手-项目计划书.md) — 完整项目计划书
 - [CONTEXT.md](CONTEXT.md) — 领域术语表

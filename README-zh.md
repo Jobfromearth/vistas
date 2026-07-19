@@ -11,9 +11,9 @@
 
 - **不是法律建议**（inte juridisk rådgivning）——只是一个带出处的法规数据服务。不判断个案（"我的申请会不会被拒"），只返回规则本身，且每条都带引用。给不出引用就明确返回"无数据"，绝不硬凑。
 - **分层引用，诚实到底。** 法律源（Riksdagen 开放数据的 SFS 法条）引用到条款级（kap. + §）；机构指南引用到页面+章节级。每条结果都会说明自己是哪一层——不会把指南内容包装成法条级别的精度。
-- **双时间轴，而非单轴。** 每个规则版本都带一个*观察区间*（我们的抓取何时看到这条内容）；只有在源头明确给出时，才会有*法律生效区间*（它何时真正生效）。两者永不混用——详见 [ADR-0002](docs/adr/0002-bitemporal-rule-model.md)。
-- **零个人数据是架构事实，不是一句承诺。** 你的查询从不离开本机，所以根本没有可收集的东西。详见 [ADR-0001](docs/adr/0001-local-first-mcp-distribution.md)。
-- **数据集完全开放。** 版本化快照以 **CC-BY** 发布（需署名出处，这是 Migrationsverket 自己条款的硬性要求，见 [`docs/research/migrationsverket-villkor.md`](docs/research/migrationsverket-villkor.md)）——随便拷贝、fork、二次开发。详见 [ADR-0004](docs/adr/0004-fully-open-dataset.md)。
+- **双时间轴，而非单轴。** 每个规则版本都带一个*观察区间*（我们的抓取何时看到这条内容）；只有在源头明确给出时，才会有*法律生效区间*（它何时真正生效）。两者永不混用。
+- **零个人数据是架构事实，不是一句承诺。** 你的查询从不离开本机，所以根本没有可收集的东西。
+- **数据集完全开放。** 版本化快照以 **CC-BY** 发布（需署名出处，这是 Migrationsverket 自己条款的硬性要求，见 [`docs/research/migrationsverket-villkor.md`](docs/research/migrationsverket-villkor.md)）——随便拷贝、fork、二次开发。
 
 ## 现状
 
@@ -28,9 +28,9 @@
 | M5 发布 | 发布到 PyPI、快照发 GitHub Releases | ⏳ 尚未发布 |
 | M6 扩展 | 跨境税务（Skatteverket/SINK）、更多 Migrationsverket P0 页面、rättsliga ställningstaganden | ⏳ 尚未实现 |
 
-**合规状态：** 与法条文本不同，机构撰写的散文内容不会自动免版权，所以按 [ADR-0004](docs/adr/0004-fully-open-dataset.md) 的门禁，全文再分发要先核实各站使用条款。migrationsverket.se 主站的核实已经完成——网页散文内容以 **CC-BY**（需署名）整页再分发已确认可行，见 [`docs/research/migrationsverket-villkor.md`](docs/research/migrationsverket-villkor.md)。`rättsliga ställningstaganden` 法律立场文件（托管在独立的 Lifos 平台）已经补充核实过（[`docs/research/migrationsverket-lifos-villkor.md`](docs/research/migrationsverket-lifos-villkor.md)）：没找到明文许可，但找到一个站得住脚的法条依据（瑞典著作权法 9§ 或 26a§——跟现在用来豁免 SFS 法条版权的是同一类条款），推断这类文件也可以自由复制。这只是法律推断，没有判例支撑，所以摄取门禁继续保持关闭，等 M5 前的正式法律复核确认后再放开。
+**合规状态：** 与法条文本不同，机构撰写的散文内容不会自动免版权，所以全文再分发要先核实各站使用条款。migrationsverket.se 主站的核实已经完成——网页散文内容以 **CC-BY**（需署名）整页再分发已确认可行，见 [`docs/research/migrationsverket-villkor.md`](docs/research/migrationsverket-villkor.md)。`rättsliga ställningstaganden` 法律立场文件（托管在独立的 Lifos 平台）已经补充核实过（[`docs/research/migrationsverket-lifos-villkor.md`](docs/research/migrationsverket-lifos-villkor.md)）：没找到明文许可，但找到一个站得住脚的法条依据（瑞典著作权法 9§ 或 26a§——跟现在用来豁免 SFS 法条版权的是同一类条款），推断这类文件也可以自由复制。这只是法律推断，没有判例支撑，所以摄取门禁继续保持关闭，等 M5 前的正式法律复核确认后再放开。
 
-**检索准确率评测：** 现在有一份真正脚本化的评测集了——[`tests/eval/qa_set.yaml`](tests/eval/qa_set.yaml)，17 道题，全部扎根于已摄取的真实内容（每道题的"标准答案"就是它反推所本的那个 chunk），另外含 2 条超范围问题的 `no_data` 用例。接入每日流水线，针对刚构建好的快照跑（联网依赖，所以没放进快、不联网的 PR 门禁 `ci.yml`，具体理由写在 workflow 注释里）。目前 17/17。还不是计划书要的完整 50–100 条，而且测的是"给定一个已经翻译正确的查询，检索能不能找对 chunk"，不是"LLM 翻译中文问题准不准"——后者需要真实调用模型，还是手动/夜间档的缺口，没自动化。搭这个的过程中暴露了两个值得知道的检索特性（写在 YAML 对应条目的注释里）：不同页面之间存在近乎逐字重复的模板文字，通用查询没法唯一区分；纯 AND 检索设计（ADR-0003）对查询词极度敏感——多加一个原文里没出现的词就能让命中变成落空。这也是为什么 [SKILL.md](SKILL.md) 会教 agent 遇到 `no_data` 先换词重试，而不是直接放弃。
+**检索准确率评测：** 现在有一份真正脚本化的评测集了——[`tests/eval/qa_set.yaml`](tests/eval/qa_set.yaml)，17 道题，全部扎根于已摄取的真实内容（每道题的"标准答案"就是它反推所本的那个 chunk），另外含 2 条超范围问题的 `no_data` 用例。接入每日流水线，针对刚构建好的快照跑（联网依赖，所以没放进快、不联网的 PR 门禁 `ci.yml`，具体理由写在 workflow 注释里）。目前 17/17。还不是计划书要的完整 50–100 条，而且测的是"给定一个已经翻译正确的查询，检索能不能找对 chunk"，不是"LLM 翻译中文问题准不准"——后者需要真实调用模型，还是手动/夜间档的缺口，没自动化。搭这个的过程中暴露了两个值得知道的检索特性（写在 YAML 对应条目的注释里）：不同页面之间存在近乎逐字重复的模板文字，通用查询没法唯一区分；纯 AND 检索设计对查询词极度敏感——多加一个原文里没出现的词就能让命中变成落空。这也是为什么 [SKILL.md](SKILL.md) 会教 agent 遇到 `no_data` 先换词重试，而不是直接放弃。
 
 还没上 PyPI——在 M5 之前请从源码克隆运行（见下方）。
 
@@ -90,6 +90,4 @@ uv run ruff check
 
 - [CONTRIBUTING.md](CONTRIBUTING.md) — 怎么报错、怎么给评测集贡献 QA 对
 - [SKILL.md](SKILL.md) — 如何把四个 tool 用好（同时以 `vistas://skill` MCP resource 形式实时提供，任何连接的客户端不需要本地克隆仓库也能读到）
-- [瑞典移民助手-项目计划书.md](瑞典移民助手-项目计划书.md) — 完整项目计划书
 - [CONTEXT.md](CONTEXT.md) — 领域术语表
-- [docs/adr/](docs/adr/) — 架构决策记录

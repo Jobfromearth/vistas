@@ -10,4 +10,4 @@ Default triage label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`
 
 ### Domain docs
 
-Single-context — `CONTEXT.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context — `CONTEXT.md` at the repo root (no `docs/adr/`; architecture-decision docs aren't published in this repo). See `docs/agents/domain.md`.

@@ -1,6 +1,6 @@
 # Contributing to Vistas
 
-Vistas has no telemetry (see [ADR-0001](docs/adr/0001-local-first-mcp-distribution.md)) — it can't learn from real usage automatically, on purpose. It only gets better through things people do on purpose and in public: reporting a bad answer, or contributing a verified QA pair. Both are welcome.
+Vistas has no telemetry by design — it can't learn from real usage automatically, on purpose. It only gets better through things people do on purpose and in public: reporting a bad answer, or contributing a verified QA pair. Both are welcome.
 
 ## Report a bad or outdated answer
 
@@ -48,8 +48,8 @@ To add an entry:
    ```
    VISTAS_EVAL_DB=path/to/snapshot.db uv run pytest "tests/eval/test_qa_set.py::test_qa_entry[qa-018]" -m live -v
    ```
-   If it fails, that's not necessarily wrong — see the regression notes already in `qa_set.yaml` for two real examples (near-duplicate content across pages, and the pure-AND query design's sensitivity to extra words) where the fix was adjusting the query, not the code. Read `docs/adr/0003-lexical-retrieval-agent-translation.md` if you want to understand why queries behave this way before assuming it's a bug.
+   If it fails, that's not necessarily wrong — see the regression notes already in `qa_set.yaml` for two real examples (near-duplicate content across pages, and the pure-AND query design's sensitivity to extra words) where the fix was adjusting the query, not the code, before assuming it's a bug.
 
 ### Code changes
 
-Standard flow: fork, branch, `uv run pytest -m "not live"` + `uv run mypy` + `uv run ruff check` before opening a PR. See `docs/adr/` for the architecture decisions behind the current design, and [SKILL.md](SKILL.md) for how the MCP tools are meant to be used — both are worth reading before proposing a structural change.
+Standard flow: fork, branch, `uv run pytest -m "not live"` + `uv run mypy` + `uv run ruff check` before opening a PR. See [SKILL.md](SKILL.md) for how the MCP tools are meant to be used — worth reading before proposing a structural change.

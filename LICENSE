@@ -24,5 +24,4 @@ SOFTWARE.
 
 This license covers the Vistas source code only. The versioned rule dataset
 it produces (SFS legal text and Migrationsverket guidance content) is
-licensed separately under CC-BY — see ADR-0004 (docs/adr/0004-fully-open-dataset.md)
-and docs/research/migrationsverket-villkor.md.
+licensed separately under CC-BY — see docs/research/migrationsverket-villkor.md.
